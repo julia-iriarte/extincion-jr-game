@@ -6,7 +6,10 @@ DEBUG = False
 
 
 def generar_mazo():
-    """Genera todas las cartas según la distribución de fichas proporcionadas por el autor del juego y las añade al mazo"""
+    """Genera todas las cartas según la distribución de fichas proporcionadas por el autor del juego 
+    y las añade al mazo.
+    This generates the cards (there are only 10 cards but every one of them are different). 
+    They are 10 different dinosaurs who eat a different amount of food (leaves, meat, fish and bones)."""
     Protoceratops = {'nombre': 'Protoceratops', 'hoja': 2, 'carne': 0, 'pescado': 0, 'hueso': 0, 'fichas': []}
     Parasaurolophus = {'nombre': 'Parasaurolophus', 'hoja': 3, 'carne': 0, 'pescado': 0, 'hueso': 0, 'fichas': []}
     Triceratops = {'nombre': 'Triceratops', 'hoja': 3, 'carne': 0, 'pescado': 0, 'hueso': 0, 'fichas': []}
@@ -22,13 +25,18 @@ def generar_mazo():
     return mazo
 
 def generar_bolsa(ncomodinos):
-    """Genera todas las fichas de alimento según la distribución proporcionada por el autor y las añade a la bolsa"""
+    """Genera todas las fichas de alimento según la distribución proporcionada por el autor 
+    y las añade a la bolsa.
+    generates the bag with the food tokens and "comodinos" tokens. 
+    One joker token can be eaten by any of the dinosaurs so the more joker tokens we have, 
+    the easier we win the game. Remember this is a cooperative game and we have to feed the dinosaurs 
+    before the extinction comes. """
     bolsa = ['hoja', 'hoja', 'hoja', 'hoja', 'hoja', 'hoja', 'hoja', 
              'carne', 'carne', 'carne', 'carne', 'carne',
              'pescado', 'pescado', 'pescado', 'pescado', 
              'hueso', 'hueso', 'hueso']
     comodinos = []
-    if ncomodinos > 0:
+    if ncomodinos > 0: #Solo si establecemos más de 0 comodinos, añadimos todos esos comodinos a la bolsa.
         for i in range(ncomodinos):
             comodinos.append('comodino')
         bolsa.extend(comodinos)
@@ -37,7 +45,12 @@ def generar_bolsa(ncomodinos):
 
 def preparar_partida():
     """Establece el estado inicial de la partida, incluyendo el mazo de dinosaurios, el de descartes (vacío), 
-    la bolsa de fichas, el tablero de extinción (vacío) y la mesa (con 3 cartas iniciales)"""
+    la bolsa de fichas, el tablero de extinción (vacío) y la mesa (con 3 cartas iniciales).
+
+    This establish the status of the game "estado" (the deck "mazo", the discards "descartes", 
+    the center of the table "mesa" with the dinosaurs to feed, the extinction board "extincion" 
+    -a countdown where we put the tokens if they don't match any of the dinosaurs in the table-, 
+    the bag "bolsa" with the tokens and the turn "turno" starting from 0).    """
     estado = {
         'mazo': [], #mazo de robo actual
         'descartes': [], #mazo de cartas descartadas: indica lo cerca que se está de lograr ganar la partida
@@ -68,7 +81,8 @@ def derrota(estado):
         return False
 
 def rescatar_dino(estado):
-    """Rescatamos un dinosaurio si conseguimos cubrir todas sus necesidades de fichas de alimento"""
+    """Rescatamos un dinosaurio si conseguimos cubrir todas sus necesidades de fichas de alimento.
+    This applies when a dinosaur card in the center of the table is fully fed. It is rescued!"""
     for carta in estado['mesa']:
         if carta['hoja'] + carta['carne'] + carta['pescado'] + carta['hueso'] == 0:
             estado['mesa'].remove(carta)
@@ -85,7 +99,9 @@ def rescatar_dino(estado):
     return estado
 
 def alimentar_dino_hambriento(estado):
-    """Dentro de la mesa, vamos mirando carta por carta hasta encontrar un hueco de alimento que aún falte por rellenar"""
+    """Dentro de la mesa, vamos mirando carta por carta hasta encontrar un hueco de alimento que 
+    aún falte por rellenar.
+    This is the basic code which applies for "comodinos", so it can be fed and substitute any food."""
     for carta in estado['mesa']:
         if carta['hoja'] > 0:
             carta['hoja'] -= 1
@@ -102,45 +118,51 @@ def alimentar_dino_hambriento(estado):
     return estado
 
 def colocar_ficha(ficha1, ficha2, estado):
-        for carta in estado['mesa']: #revisamos las cartas que hay en la mesa de una en una (hasta que tengamos una IA más compleja)
-            if ficha1 == 'comodino':
-                alimentar_dino_hambriento(estado)
-                carta['fichas'].append(ficha1)
-                estado['bolsa'].append(ficha2)
-                random.shuffle(estado['bolsa'])
-                if DEBUG: print(f'1 La ficha de {ficha1} se ha colocado en el {carta["nombre"]}, y la de {ficha2} se ha devuelto a la bolsa.\n')
-                break
-            elif ficha2 == 'comodino':
-                alimentar_dino_hambriento(estado)
-                carta['fichas'].append(ficha2)
-                estado['bolsa'].append(ficha1)
-                random.shuffle(estado['bolsa'])
-                if DEBUG: print(f'2 La ficha de {ficha1} se ha devuelto a la bolsa y la de {ficha2} se ha colocado en el {carta["nombre"]}.\n')
-                break
-            elif carta[ficha1] > 0:
-                carta[ficha1] = carta[ficha1] - 1
-                carta['fichas'].append(ficha1)
-                estado['bolsa'].append(ficha2)
-                random.shuffle(estado['bolsa'])
-                if DEBUG: print(f'1 La ficha de {ficha1} se ha colocado en el {carta["nombre"]}, y la de {ficha2} se ha devuelto a la bolsa.\n')
-                break
-            elif carta[ficha2] > 0:
-                carta[ficha2] = carta[ficha2] - 1
-                carta['fichas'].append(ficha2)
-                estado['bolsa'].append(ficha1)
-                random.shuffle(estado['bolsa'])
-                if DEBUG: print(f'2 La ficha de {ficha1} se ha devuelto a la bolsa y la de {ficha2} se ha colocado en el {carta["nombre"]}.\n')
-                break
-
-        else:
-            estado['extincion'].append(ficha1)
+    """Recibimos 2 fichas y el estado de la partida. Si tenemos un comodín o alguno de los espacios restantes 
+    de las cartas de dinosaurios coinciden con las fichas, colocamos ahí la carta y se reduce la necesidad del dino.
+    We can only put a token on a dinosaur to feed it if it needs one of the tokens we do have in our hands."""
+    for carta in estado['mesa']: #revisamos las cartas que hay en la mesa de una en una (hasta que tengamos una IA más compleja)
+        if ficha1 == 'comodino':
+            alimentar_dino_hambriento(estado)
+            carta['fichas'].append(ficha1)
             estado['bolsa'].append(ficha2)
             random.shuffle(estado['bolsa'])
-            if derrota(estado) == False:
-                if DEBUG: print(f'3 La ficha de {ficha2} se ha devuelto a la bolsa y la ficha de {ficha1} se ha colocado en el tablero. Quedan {6-len(estado["extincion"])} espacios para la extinción.\n')
-                
+            if DEBUG: print(f'1 La ficha de {ficha1} se ha colocado en el {carta["nombre"]}, y la de {ficha2} se ha devuelto a la bolsa.\n')
+            break
+        elif ficha2 == 'comodino':
+            alimentar_dino_hambriento(estado)
+            carta['fichas'].append(ficha2)
+            estado['bolsa'].append(ficha1)
+            random.shuffle(estado['bolsa'])
+            if DEBUG: print(f'2 La ficha de {ficha1} se ha devuelto a la bolsa y la de {ficha2} se ha colocado en el {carta["nombre"]}.\n')
+            break
+        elif carta[ficha1] > 0:
+            carta[ficha1] = carta[ficha1] - 1
+            carta['fichas'].append(ficha1)
+            estado['bolsa'].append(ficha2)
+            random.shuffle(estado['bolsa'])
+            if DEBUG: print(f'1 La ficha de {ficha1} se ha colocado en el {carta["nombre"]}, y la de {ficha2} se ha devuelto a la bolsa.\n')
+            break
+        elif carta[ficha2] > 0:
+            carta[ficha2] = carta[ficha2] - 1
+            carta['fichas'].append(ficha2)
+            estado['bolsa'].append(ficha1)
+            random.shuffle(estado['bolsa'])
+            if DEBUG: print(f'2 La ficha de {ficha1} se ha devuelto a la bolsa y la de {ficha2} se ha colocado en el {carta["nombre"]}.\n')
+            break
+
+    else:
+        estado['extincion'].append(ficha1) #Si ninguna ficha encaja, la colocamos en el tablero de extinción -countdown-.
+        estado['bolsa'].append(ficha2)
+        random.shuffle(estado['bolsa'])
+        if derrota(estado) == False:
+            if DEBUG: print(f'3 La ficha de {ficha2} se ha devuelto a la bolsa y la ficha de {ficha1} se ha colocado en el tablero. Quedan {6-len(estado["extincion"])} espacios para la extinción.\n')
+            
 
 def partida(estado, ncomodinos):
+    """Recibe el estado de la partida y el número de comodinos. Realiza el proceso de la partida.
+    Modifica el estado de la partida, actualiza victoria o derrota y avanza los turnos.
+    This organize the game step by step (turns), with estado and number of jokers as inputs."""
     while victoria(estado) == False and derrota(estado) == False: #Jugamos un nuevo turno mientras no hayamos ganado ni perdido.
         if DEBUG: print('Sacamos dos fichas de la bolsa...\n')
         ficha1 = estado['bolsa'].pop()
@@ -168,6 +190,9 @@ def partida(estado, ncomodinos):
 
 
 def iniciar_partida(estado, ncomodinos):
+    """Recibe estado y ncomodinos y devuelve, tras preparar y realizar la partida, 
+    los datos relevantes para el diseño y los incluye en la varaible resultado, que devuelve.
+    This function prepares and run the game 'partida' and it returns the resultado with the final simulation data."""
     preparar_partida()
     partida(estado, ncomodinos)
     dinos_rescatados = len(estado['descartes'])
@@ -176,6 +201,7 @@ def iniciar_partida(estado, ncomodinos):
 
 
 
+#In the next few lines we just change the number of comodinos (joker tokens), run the simulation 10.000 times and sabe to a csv.
 resultados0 = []
 for i in range(10000):
     ncomodinos = 0
